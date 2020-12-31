@@ -4,6 +4,7 @@ module.exports = ({ env }) => {
 
   if(env('NODE_ENV') === 'production') {
     const config = parse(process.env.DATABASE_URL); 
+    console.log(config);
     return {
       defaultConnection: 'default',
       connections: {
@@ -15,10 +16,10 @@ module.exports = ({ env }) => {
             port: config.port,
             database: config.database,
             username: config.user,
-            password: config.password
+            password: config.password,
           },
           options: {
-            ssl: false,
+            ssl: true,
           },
         },
       },
