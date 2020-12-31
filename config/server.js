@@ -2,7 +2,7 @@ module.exports = ({ env }) => {
   
   if(env('NODE_ENV') === 'production') {
     return {
-      host: env('HOST', '0.0.0.0'),
+      host: env('HOST'),
       port: env.int('PORT', 1337),
       url: env('HEROKU_URL'),
       admin: {
