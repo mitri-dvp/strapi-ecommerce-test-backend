@@ -1,0 +1,43 @@
+{
+  "name": "ecommerce-backend",
+  "private": true,
+  "version": "0.1.0",
+  "description": "A Strapi application",
+  "scripts": {
+    "develop": "strapi develop",
+    "start": "strapi start",
+    "build": "strapi build",
+    "strapi": "strapi"
+  },
+  "devDependencies": {},
+  "dependencies": {
+    "@paypal/checkout-server-sdk": "^1.0.2",
+    "knex": "<0.20.0",
+    "paypal-rest-sdk": "^1.8.1",
+    "pg": "^8.5.1",
+    "pg-connection-string": "^2.4.0",
+    "sqlite3": "latest",
+    "strapi": "3.2.5",
+    "strapi-admin": "3.2.5",
+    "strapi-connector-bookshelf": "3.2.5",
+    "strapi-plugin-content-manager": "3.2.5",
+    "strapi-plugin-content-type-builder": "3.2.5",
+    "strapi-plugin-email": "3.2.5",
+    "strapi-plugin-upload": "3.2.5",
+    "strapi-plugin-users-permissions": "3.2.5",
+    "strapi-provider-upload-cloudinary": "^3.4.1",
+    "strapi-utils": "3.2.5",
+    "stripe": "^8.129.0"
+  },
+  "author": {
+    "name": "mitri.dvp"
+  },
+  "strapi": {
+    "uuid": "26f51e48-07a9-4f5c-a4c6-fbb1d9a33e3f"
+  },
+  "engines": {
+    "node": ">=10.16.0 <= 14.x.x",
+    "npm": ">=6.0.0"
+  },
+  "license": "MIT"
+}
