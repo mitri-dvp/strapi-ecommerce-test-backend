@@ -1413,41 +1413,6 @@
       "resolved": "https://registry.npmjs.org/@sailshq/lodash/-/lodash-3.10.4.tgz",
       "integrity": "sha512-YXJqp9gdHcZKAmBY/WnwFpPtNQp2huD/ME2YMurH2YHJvxrVzYsmpKw/pb7yINArRpp8E++fwbQd3ajYXGA45Q=="
     },
-    "@sendgrid/client": {
-      "version": "6.5.5",
-      "resolved": "https://registry.npmjs.org/@sendgrid/client/-/client-6.5.5.tgz",
-      "integrity": "sha512-Nbfgo94gbWSL8PIgJfuHoifyOJJepvV8NQkkglctAEfb1hyozKhrzE6v1kPG/z4j0RodaTtXD5LJj/t0q/VhLA==",
-      "requires": {
-        "@sendgrid/helpers": "^6.5.5",
-        "@types/request": "^2.48.4",
-        "request": "^2.88.0"
-      }
-    },
-    "@sendgrid/helpers": {
-      "version": "6.5.5",
-      "resolved": "https://registry.npmjs.org/@sendgrid/helpers/-/helpers-6.5.5.tgz",
-      "integrity": "sha512-uRFEanalfss5hDsuzVXZ1wm7i7eEXHh1py80piOXjobiQ+MxmtR19EU+gDSXZ+uMcEehBGhxnb7QDNN0q65qig==",
-      "requires": {
-        "chalk": "^2.0.1",
-        "deepmerge": "^4.2.2"
-      },
-      "dependencies": {
-        "deepmerge": {
-          "version": "4.2.2",
-          "resolved": "https://registry.npmjs.org/deepmerge/-/deepmerge-4.2.2.tgz",
-          "integrity": "sha512-FJ3UgI4gIl+PHZm53knsuSFpE+nESMr7M4v9QcgB7S63Kj/6WqMiFQJpBBYz1Pt+66bZpP3Q7Lye0Oo9MPKEdg=="
-        }
-      }
-    },
-    "@sendgrid/mail": {
-      "version": "6.4.0",
-      "resolved": "https://registry.npmjs.org/@sendgrid/mail/-/mail-6.4.0.tgz",
-      "integrity": "sha512-pVzbqbxhZ4FUN6iSIksRLtyXRPurrcee1i0noPDStDCLlHVwUR+TofeeKIFWGpIvbbk5UR6S6iV/U5ie8Kdblw==",
-      "requires": {
-        "@sendgrid/client": "^6.4.0",
-        "@sendgrid/helpers": "^6.4.0"
-      }
-    },
     "@sentry/core": {
       "version": "5.29.2",
       "resolved": "https://registry.npmjs.org/@sentry/core/-/core-5.29.2.tgz",
@@ -1562,11 +1527,6 @@
         "@types/node": "*"
       }
     },
-    "@types/caseless": {
-      "version": "0.12.2",
-      "resolved": "https://registry.npmjs.org/@types/caseless/-/caseless-0.12.2.tgz",
-      "integrity": "sha512-6ckxMjBBD8URvjB6J3NcnuAn5Pkl7t3TizAg+xdlzzQGSPSmBcXf8KoIH0ua/i+tio+ZRUHEXp0HEmvaR4kt0w=="
-    },
     "@types/formidable": {
       "version": "1.0.32",
       "resolved": "https://registry.npmjs.org/@types/formidable/-/formidable-1.0.32.tgz",
@@ -1640,34 +1600,6 @@
         "@types/prop-types": "*",
         "csstype": "^3.0.2"
       }
-    },
-    "@types/request": {
-      "version": "2.48.5",
-      "resolved": "https://registry.npmjs.org/@types/request/-/request-2.48.5.tgz",
-      "integrity": "sha512-/LO7xRVnL3DxJ1WkPGDQrp4VTV1reX9RkC85mJ+Qzykj2Bdw+mG15aAfDahc76HtknjzE16SX/Yddn6MxVbmGQ==",
-      "requires": {
-        "@types/caseless": "*",
-        "@types/node": "*",
-        "@types/tough-cookie": "*",
-        "form-data": "^2.5.0"
-      },
-      "dependencies": {
-        "form-data": {
-          "version": "2.5.1",
-          "resolved": "https://registry.npmjs.org/form-data/-/form-data-2.5.1.tgz",
-          "integrity": "sha512-m21N3WOmEEURgk6B9GLOE4RuWOFf28Lhh9qGYeNlGq4VDXUlJy2th2slBNU8Gp8EzloYZOibZJ7t5ecIrFSjVA==",
-          "requires": {
-            "asynckit": "^0.4.0",
-            "combined-stream": "^1.0.6",
-            "mime-types": "^2.1.12"
-          }
-        }
-      }
-    },
-    "@types/tough-cookie": {
-      "version": "4.0.0",
-      "resolved": "https://registry.npmjs.org/@types/tough-cookie/-/tough-cookie-4.0.0.tgz",
-      "integrity": "sha512-I99sngh224D0M7XgW1s120zxCt3VYQ3IQsuw3P3jbq5GG4yc79+ZjyKznyOGIQrflfylLgcfekeZW/vk0yng6A=="
     },
     "@webassemblyjs/ast": {
       "version": "1.9.0",
@@ -7740,9 +7672,9 @@
       "integrity": "sha512-ONmRUqK7zj7DWX0D9ADe03wbwOBZxNAfF20PlGfCWQcD3+/MakShIHrMqx9YwPTfxDdF1zLeL+RGZiR9kGMLdg=="
     },
     "needle": {
-      "version": "2.6.0",
-      "resolved": "https://registry.npmjs.org/needle/-/needle-2.6.0.tgz",
-      "integrity": "sha512-KKYdza4heMsEfSWD7VPUIz3zX2XDwOyX2d+geb4vrERZMT5RMU6ujjaD+I5Yr54uZxQ2w6XRTAhHBbSCyovZBg==",
+      "version": "2.5.2",
+      "resolved": "https://registry.npmjs.org/needle/-/needle-2.5.2.tgz",
+      "integrity": "sha512-LbRIwS9BfkPvNwNHlsA41Q29kL2L/6VaOJ0qisM5lLWsTV3nP15abO5ITL6L81zqFhzjRKDAYjpcBcwM0AVvLQ==",
       "requires": {
         "debug": "^3.2.6",
         "iconv-lite": "^0.4.4",
@@ -7791,9 +7723,9 @@
       }
     },
     "node-addon-api": {
-      "version": "3.1.0",
-      "resolved": "https://registry.npmjs.org/node-addon-api/-/node-addon-api-3.1.0.tgz",
-      "integrity": "sha512-flmrDNB06LIl5lywUz7YlNGZH/5p0M7W28k8hzd9Lshtdh1wshD2Y+U4h9LD6KObOy1f+fEVdgprPrEymjM5uw=="
+      "version": "2.0.0",
+      "resolved": "https://registry.npmjs.org/node-addon-api/-/node-addon-api-2.0.0.tgz",
+      "integrity": "sha512-ASCL5U13as7HhOExbT6OlWJJUV/lLzL2voOSP1UVehpRD8FbSrSDjfScK/KwAvVTI5AS6r4VwbOMlIqtvRidnA=="
     },
     "node-fetch": {
       "version": "2.6.1",
@@ -10844,11 +10776,11 @@
       "integrity": "sha512-VE0SOVEHCk7Qc8ulkWw3ntAzXuqf7S2lvwQaDLRnUeIEaKNQJzV6BwmLKhOqT61aGhfUMrXeaBk+oDGCzvhcug=="
     },
     "sqlite3": {
-      "version": "5.0.1",
-      "resolved": "https://registry.npmjs.org/sqlite3/-/sqlite3-5.0.1.tgz",
-      "integrity": "sha512-kh2lTIcYNfmVcvhVJihsYuPj9U0xzBbh6bmqILO2hkryWSC9RRhzYmkIDtJkJ+d8Kg4wZRJ0T1reyHUEspICfg==",
+      "version": "5.0.0",
+      "resolved": "https://registry.npmjs.org/sqlite3/-/sqlite3-5.0.0.tgz",
+      "integrity": "sha512-rjvqHFUaSGnzxDy2AHCwhHy6Zp6MNJzCPGYju4kD8yi6bze4d1/zMTg6C7JI49b7/EM7jKMTvyfN/4ylBKdwfw==",
       "requires": {
-        "node-addon-api": "^3.0.0",
+        "node-addon-api": "2.0.0",
         "node-gyp": "3.x",
         "node-pre-gyp": "^0.11.0"
       }
@@ -11655,30 +11587,6 @@
           "version": "4.17.19",
           "resolved": "https://registry.npmjs.org/lodash/-/lodash-4.17.19.tgz",
           "integrity": "sha512-JNvd8XER9GQX0v2qJgsaN/mzFCNA5BRe/j8JN9d+tWyGLSodKQHKFicdwNYzWwI3wjRnaKPsGj1XkBjx/F96DQ=="
-        }
-      }
-    },
-    "strapi-provider-email-sendgrid": {
-      "version": "3.4.4",
-      "resolved": "https://registry.npmjs.org/strapi-provider-email-sendgrid/-/strapi-provider-email-sendgrid-3.4.4.tgz",
-      "integrity": "sha512-mYJX255nIVL4+lDX43ug3kKegYwCGC4DSa7xam6AtdyHI6HQsBUiXLy/6KudVLLycA5ZKtusJ4F+/+Jpy/T7sw==",
-      "requires": {
-        "@sendgrid/mail": "6.4.0",
-        "strapi-utils": "3.4.4"
-      },
-      "dependencies": {
-        "strapi-utils": {
-          "version": "3.4.4",
-          "resolved": "https://registry.npmjs.org/strapi-utils/-/strapi-utils-3.4.4.tgz",
-          "integrity": "sha512-ybJFNMnYp260bkxN/339i6MKB5GQjg/4evJvO2KJYCxF4kPT4sLBsZOVV4jMN3D99L7tZiQa/3VMqRj0TsXEnQ==",
-          "requires": {
-            "@sindresorhus/slugify": "1.1.0",
-            "date-fns": "^2.8.1",
-            "lodash": "4.17.20",
-            "pino": "^4.7.1",
-            "pluralize": "^8.0.0",
-            "yup": "0.29.3"
-          }
         }
       }
     },

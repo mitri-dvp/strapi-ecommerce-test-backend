@@ -11,10 +11,29 @@ module.exports = ({ env }) => {
           api_secret: env('CLOUDINARY_SECRET'),
         },
       },
+      email: {
+        provider: 'sendgrid',
+        providerOptions: {
+          apiKey: env('SENDGRID_API_KEY'),
+        },
+        settings: {
+          defaultFrom: env('SENDGRID_DEFAULT_FROM'),
+          defaultReplyTo: env('SENDGRID_REPLY_TO'),
+        },
+      },
     };
   }
 
   return {
-    
+    email: {
+      provider: 'sendgrid',
+      providerOptions: {
+        apiKey: env('SENDGRID_API_KEY'),
+      },
+      settings: {
+        defaultFrom: 'mitri-dev@mitri-dev.xyz',
+        defaultReplyTo: 'mitri.dvp@gmail.com',
+      },
+    }
   };
 };

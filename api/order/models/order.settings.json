@@ -23,14 +23,16 @@
     "checkout_session": {
       "type": "string"
     },
-    "product": {
-      "model": "product",
-      "via": "orders"
-    },
     "user": {
       "plugin": "users-permissions",
       "model": "user",
       "via": "orders"
+    },
+    "products_list": {
+      "type": "json"
+    },
+    "provider": {
+      "type": "string"
     }
   }
 }
