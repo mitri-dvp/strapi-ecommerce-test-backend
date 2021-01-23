@@ -74,25 +74,21 @@ module.exports = {
     await new Promise((resolve, reject) => {
       products.forEach(async(product, i) => { 
         let tempProduct = {};
-        const realProduct = await strapi.services.product.findOne({id: product.id}).catch(() => {
+        await strapi.services.product.findOne({id: product.id}).then((realProduct) => {
+          products_list_ID.push(realProduct.id);
+
+          tempProduct.id = realProduct.id;
+          tempProduct.title = realProduct.title;
+          tempProduct.price = realProduct.price;
+          tempProduct.slug = realProduct.slug;
+          tempProduct.image = {};
+          tempProduct.image.url = realProduct.image.formats.thumbnail.url;
+          tempProduct.cart_amount = products[i].cart_amount;
+  
+          products_list.push(tempProduct);
+        }).catch(() => {
           reject();
         });
-        if(!realProduct) {
-          reject();
-        }
-
-        products_list_ID.push(realProduct.id);
-
-        tempProduct.id = realProduct.id;
-        tempProduct.title = realProduct.title;
-        tempProduct.price = realProduct.price;
-        tempProduct.slug = realProduct.slug;
-        tempProduct.image = {};
-        tempProduct.image.url = realProduct.image.formats.thumbnail.url;
-        tempProduct.cart_amount = products[i].cart_amount;
-
-        products_list.push(tempProduct);
-
         if(i >= products.length - 1) resolve(true);
       });
     }).catch(() => {  
@@ -100,6 +96,11 @@ module.exports = {
     });
 
     console.log('Products list: ', products_list);
+
+    console.log('P', products.length);
+    console.log('PL', products_list.length);
+
+    if(products.length != products_list.length) return ctx.throw(500, 'Writing Error');
 
     // STRIPE
     if(provider === 'stripe') {
