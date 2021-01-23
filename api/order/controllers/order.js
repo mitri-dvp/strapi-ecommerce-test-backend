@@ -69,10 +69,14 @@ module.exports = {
     const products_list = [];
     const products_list_ID = [];
 
+    console.log('Product Recieved: ', products);
+
     await new Promise((resolve, reject) => {
       products.forEach(async(product, i) => { 
         let tempProduct = {};
-        const realProduct = await strapi.services.product.findOne({id: product.id});
+        const realProduct = await strapi.services.product.findOne({id: product.id}).catch(() => {
+          reject();
+        });
         if(!realProduct) {
           reject();
         }
@@ -95,7 +99,7 @@ module.exports = {
       ctx.throw(404, 'No product with such ID.');
     });
 
-
+    console.log('Products list: ', products_list);
 
     // STRIPE
     if(provider === 'stripe') {
@@ -113,7 +117,7 @@ module.exports = {
         return a;
       });
 
-      console.log(line_items);
+      console.log('Line items for Stripe: ', line_items);
 
       // Create Stripe Chechkout Session
       const session = await stripe.checkout.sessions.create({
