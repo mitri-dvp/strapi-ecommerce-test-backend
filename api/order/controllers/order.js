@@ -228,8 +228,7 @@ module.exports = {
         updated_order.products_list.forEach(product => {
           list = list + `
           <div style="display: flex;justify-content: space-between;gap: 0.5rem;align-items: center;">
-            <img style="width: 4rem;height: max-content;
-            margin: 0;" src="${product.image.url}" alt="${product.title}_img">
+            <img style="width: 4rem;margin: 0;" src="${product.image.url}" alt="${product.title}_img">
             <p style="font-weight: bold; margin-right: auto;margin-left: 0.5rem;padding-right: 0.5rem;">${product.title} x ${product.cart_amount}</p>
             <p style="font-weight: bold; min-width: max-content;">$${(product.price * product.cart_amount).toFixed(2)}</p>
           </div>
