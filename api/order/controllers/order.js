@@ -71,29 +71,33 @@ module.exports = {
 
     console.log('Product Recieved: ', products);
 
-    await new Promise((resolve, reject) => {
-      products.forEach(async(product, i) => { 
-        let tempProduct = {};
-        await strapi.services.product.findOne({id: product.id}).then((realProduct) => {
-          products_list_ID.push(realProduct.id);
+    await (async function loop() {
+      for (let i = 0; i < products.length; i++) {
+        await new Promise((resolve, reject) => {
+          let tempProduct = {};
+          strapi.services.product.findOne({id:  products[i].id}).then((realProduct) => {
+            products_list_ID.push(realProduct.id);
 
-          tempProduct.id = realProduct.id;
-          tempProduct.title = realProduct.title;
-          tempProduct.price = realProduct.price;
-          tempProduct.slug = realProduct.slug;
-          tempProduct.image = {};
-          tempProduct.image.url = realProduct.image.formats.thumbnail.url;
-          tempProduct.cart_amount = products[i].cart_amount;
-  
-          products_list.push(tempProduct);
-        }).catch(() => {
-          reject();
+            tempProduct.id = realProduct.id;
+            tempProduct.title = realProduct.title;
+            tempProduct.price = realProduct.price;
+            tempProduct.slug = realProduct.slug;
+            tempProduct.image = {};
+            tempProduct.image.url = realProduct.image.formats.thumbnail.url;
+            tempProduct.cart_amount = products[i].cart_amount;
+    
+            products_list.push(tempProduct);
+
+            resolve();
+          }).catch(() => {
+            reject();
+          });
+
+        }).catch(() => {  
+          ctx.throw(404, 'No product with such ID.');
         });
-        if(i >= products.length - 1) resolve(true);
-      });
-    }).catch(() => {  
-      ctx.throw(404, 'No product with such ID.');
-    });
+      }
+    })();
 
     console.log('Products list: ', products_list);
 
