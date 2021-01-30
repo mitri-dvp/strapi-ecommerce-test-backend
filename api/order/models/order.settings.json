@@ -33,6 +33,9 @@
     },
     "provider": {
       "type": "string"
+    },
+    "payment_ID": {
+      "type": "string"
     }
   }
 }

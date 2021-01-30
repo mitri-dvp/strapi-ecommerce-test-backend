@@ -28,17 +28,22 @@ module.exports = ({ env }) => {
     };
   }
 
+  const config = parse('postgresql://postgres:27137766pg@localhost:5432/strapi-ecommerce'); 
   return {
     defaultConnection: 'default',
     connections: {
       default: {
         connector: 'bookshelf',
         settings: {
-          client: 'sqlite',
-          filename: env('DATABASE_FILENAME', '.tmp/data.db'),
+          client: 'postgres',
+          host: config.host,
+          port: config.port,
+          database: config.database,
+          username: config.user,
+          password: config.password
         },
         options: {
-          useNullAsDefault: true,
+          ssl: false,
         },
       },
     },

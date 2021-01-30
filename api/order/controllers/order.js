@@ -1,3 +1,4 @@
+/* eslint-disable no-unreachable */
 /* eslint-disable quotes */
 /* eslint-disable no-unused-vars */
 'use strict';
@@ -68,43 +69,42 @@ module.exports = {
 
     const products_list = [];
     const products_list_ID = [];
+    const products_oos = [];
 
-    console.log('Product Recieved: ', products);
-
+    // Product Validation/OOS Start
     await (async function loop() {
       for (let i = 0; i < products.length; i++) {
-        await new Promise((resolve, reject) => {
+        await strapi.services.product.findOne({id:  products[i].id}).then((realProduct) => {
           let tempProduct = {};
-          strapi.services.product.findOne({id:  products[i].id}).then((realProduct) => {
-            products_list_ID.push(realProduct.id);
+          products_list_ID.push(realProduct.id);
 
-            tempProduct.id = realProduct.id;
-            tempProduct.title = realProduct.title;
-            tempProduct.price = realProduct.price;
-            tempProduct.slug = realProduct.slug;
-            tempProduct.image = {};
-            tempProduct.image.url = realProduct.image.formats.thumbnail.url;
-            tempProduct.cart_amount = products[i].cart_amount;
+          tempProduct.id = realProduct.id;
+          tempProduct.title = realProduct.title;
+          tempProduct.price = realProduct.price;
+          tempProduct.slug = realProduct.slug;
+          tempProduct.image = {};
+          tempProduct.image.url = realProduct.image.formats.thumbnail.url;
+          tempProduct.cart_amount = products[i].cart_amount;
+
+          if(products[i].cart_amount > realProduct.amount) {
+            products_oos.push({id: products[i].id, amount: realProduct.amount});
+          }
     
-            products_list.push(tempProduct);
-
-            resolve();
-          }).catch(() => {
-            reject();
-          });
-
-        }).catch(() => {  
+          products_list.push(tempProduct);
+        }).catch(() => {
           ctx.throw(404, 'No product with such ID.');
         });
       }
     })();
 
-    console.log('Products list: ', products_list);
-
-    console.log('P', products.length);
-    console.log('PL', products_list.length);
-
+    if(products_oos.length > 0) return ({
+      statusCode: 400,
+      error: "Bad Request",
+      message: "Products out of stock.",
+      products: products_oos
+    });
     if(products.length != products_list.length) return ctx.throw(500, 'Writing Error');
+    // Validation Ends
 
     // STRIPE
     if(provider === 'stripe') {
@@ -114,6 +114,8 @@ module.exports = {
             currency: 'usd',
             product_data: {
               name: e.title,
+              // images: [e.image.url],
+              images: ['https://res.cloudinary.com/dz5vyxfew/image/upload/v1609450711/RFB_0502_1_pastelitoszulianos_529e1a5266.jpg'],
             },
             unit_amount: fromDecimalToInt(e.price)
           },
@@ -122,15 +124,14 @@ module.exports = {
         return a;
       });
 
-      console.log('Line items for Stripe: ', line_items);
-
-      // Create Stripe Chechkout Session
+      // Create Stripe Chechkout Session - Payment Mode
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
-        // customer_email: user.email,
+        customer_email: user.email,
         mode: 'payment',
         success_url: `${BASE_URL}/success/stripe?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: BASE_URL,
+        payment_intent_data: {capture_method: 'manual'},
         line_items: line_items
       });
 
@@ -142,10 +143,11 @@ module.exports = {
         total: total,
         status: 'unpaid',
         checkout_session: session.id,
+        payment_ID: '',
         provider: provider,
       });
 
-      return { id: session.id };
+      return { id: session.id, products_list};
     }
 
     // PAYPAL
@@ -210,10 +212,11 @@ module.exports = {
         total: total,
         status: 'unpaid',
         checkout_session: token,
+        payment_ID: '',
         provider: provider,
       });
 
-      return {link, transactions};
+      return {link, transactions, products_list};
     }
   },
 
@@ -222,14 +225,138 @@ module.exports = {
     
     // STRIPE
     if(provider === 'stripe') {
-      const { checkout_session } = ctx.request.body;
-      const session = await stripe.checkout.sessions.retrieve(checkout_session);
+      const { checkout_session, products_list } = ctx.request.body;
+      let session;
+      let intent;
+
+      // Checkout Session Verification
+      try {
+        session = await stripe.checkout.sessions.retrieve(checkout_session);
+      } catch (error) {
+        return ({
+          statusCode: 400,
+          error: "Bad Request",
+          message: "Must provide a Session."
+        });  
+      }
 
       if(session.payment_status === 'paid') {
+        return ({
+          statusCode: 304,
+          message: "Payment has already been captured.",
+        });
+      }
+
+      // Product Validation/Stock/Removal Transaction Start
+      let error;
+      const products_oos = [];
+      const knex = strapi.connections.default;
+
+      try {
+        await knex.transaction(async trx => {
+          const realProducts = await trx
+            .select('amount', 'title')
+            .from('products')
+            .orderBy('id', 'asc');
+        
+          const res = await (async function loop() {
+            for (let i = 0; i < products_list.length; i++) {
+              const {id, cart_amount} = products_list[i];
+              if(isNaN(id) || isNaN(cart_amount)) {
+                error = 'NaN';
+                await trx.rollback();
+                return;
+              }
+
+              if(cart_amount > realProducts[id - 1].amount) {
+                products_oos.push({
+                  title: realProducts[id - 1].title
+                });
+              }
+
+              const updatedProduct = await trx
+                .where('id', '=', id)
+                .update({
+                  amount: realProducts[id - 1].amount - cart_amount,
+                })
+                .from('products');            
+            }
+          })();
+
+          if(products_oos.length > 0) {
+            error = 'oos';
+            await trx.rollback();
+            return;
+          }
+          return res;    
+        });
+      } catch (err) {
+
+        if(error === 'oos') {
+          intent = await stripe.paymentIntents.cancel(session.payment_intent);
+          return ({
+            statusCode: 400,
+            error: "Bad Request",
+            message: "Products out of stock.",
+            products: products_oos
+          });
+        }
+        if(error === 'NaN') {
+          intent = await stripe.paymentIntents.cancel(session.payment_intent);
+          return ({
+            statusCode: 400,
+            error: "Bad Request",
+            message: "Not a Number."
+          });
+        } 
+      }
+      // Validation Ends
+
+      try {
+        intent = await stripe.paymentIntents.capture(session.payment_intent);
+      } catch (err) {
+        try {
+          await knex.transaction(async trx => {
+            const realProducts = await trx
+              .select('amount', 'title')
+              .from('products')
+              .orderBy('id', 'asc');
+            const res = await (async function loop() {
+              for (let i = 0; i < products_list.length; i++) {
+                const {id, cart_amount} = products_list[i];
+                const updatedProduct = await trx
+                  .where('id', '=', id)
+                  .update({
+                    amount: realProducts[id - 1].amount + cart_amount,
+                  })
+                  .from('products');            
+              }
+            })();
+            return res;    
+          });
+        } catch (err) {
+          return ({
+            statusCode: 400,
+            error: "Bad Request",
+            message: "Inventory Removal Failed."
+          });
+        }
+        intent = await stripe.paymentIntents.cancel(session.payment_intent);
+        return ({
+          statusCode: 400,
+          error: "Bad Request",
+          message: "Stripe Intent must be a String."
+        });
+      }
+
+
+      if(intent.status === 'succeeded') {
+
         const updateOrder = await strapi.services.order.update({
           checkout_session
         }, {
           status: 'paid',
+          payment_ID: session.payment_intent
         });
         const updated_order = sanitizeEntity(updateOrder, { model: strapi.models.order });
 
@@ -244,46 +371,152 @@ module.exports = {
           `;
         });
 
-        await strapi.plugins['email'].services.email.send({
-          to: updated_order.user.email,
-          from: from_email,
-          subject: 'Purchase Receipt',
-          text: `Hola`,
-          html: `<div style="max-width: 20rem;border-radius: 0.25rem;padding: 1.5rem;background: #ffffff;color: #333;box-shadow: 0 2px 3px 0px #00000010;border: 1px solid #00000020;padding-bottom: 0;">
-            <div style="margin-bottom: 1.5rem;">
-              <h2 style="margin-top: 0;text-align: center">Thank you for your purchase!</h2>
-              <div style="display: flex;justify-content: space-between;">
-                <h4 style="color: #888;margin: 0;">ORDER: ${updated_order.id}</h4>
-                <h4 style="color: #888;margin: 0;margin-left: auto;">${new Date(updated_order.updated_at).toLocaleString('en-US')}</h4>
-              </div>
-            </div>
-              <hr style="color: #00000020;">
-            <div style="margin-top: 1.5rem;display: grid;gap: 0.5rem;">
-              ${list}
-              <hr style="color: #00000020;width: 100%;">
-              <div style="display: flex;justify-content: space-between;gap: 0.5rem;align-items: center;padding-bottom: 0.5rem;">
-                <p>&nbsp;</p>
-                <p style="font-weight: bold; margin-left: auto; margin-right:0.5rem">Total:</p>
-                <p style="font-weight: bold;"">$${updated_order.total}</p>
-              </div>
-            </div>
-          </div>`,
-        });
+        // sendEmail(
+        //   updated_order.user.email,
+        //   from_email,
+        //   updated_order.id,
+        //   new Date(updated_order.updated_at).toLocaleString('en-US'),
+        //   list,
+        //   updated_order.total
+        // );
         
-        return updated_order;
+        return ({
+          statusCode: 200,
+          message: "Success.",
+          updated_order: updated_order
+        });
       } else {
+        // Undo Inventory Removal
+        try {
+          await knex.transaction(async trx => {
+            const realProducts = await trx
+              .select('amount', 'title')
+              .from('products')
+              .orderBy('id', 'asc');
+          
+            const res = await (async function loop() {
+              for (let i = 0; i < products_list.length; i++) {
+                const {id, cart_amount} = products_list[i];
+                if(isNaN(id) || isNaN(cart_amount)) {
+                  error = 'NaN';
+                  await trx.rollback();
+                  return;
+                }
+  
+                const updatedProduct = await trx
+                  .where('id', '=', id)
+                  .update({
+                    amount: realProducts[id - 1].amount + cart_amount,
+                  })
+                  .from('products');            
+              }
+            })();
+            return res;    
+          });
+        } catch (err) {
+          intent = await stripe.paymentIntents.cancel(session.payment_intent);
+          return ({
+            statusCode: 400,
+            error: "Bad Request",
+            message: "Inventory Removal Failed."
+          });
+        }
+        // Undo Inventory Removal Ends
         ctx.throw(400, 'The payment was not successful, please call support');
       }
     }
     
     // PAYPAL
     if(provider === 'paypal') {
-      const { paymentId, token, PayerID, transactions } = ctx.request.body;
+      const { paymentId, token, PayerID, transactions, products_list } = ctx.request.body;
   
       const execute_payment_json = {
         'payer_id': PayerID,
         'transactions': transactions
       };
+
+      const status = await new Promise((resolve, reject) => {
+        paypal.payment.get(paymentId, (error, payment) => {
+          if (error) {
+            reject();
+          } else {
+            resolve(payment);
+          }
+        });
+      }).catch(() => {  
+        ctx.throw(404, 'PayPal Session Does Not Exists.');
+      });
+
+      if(status.state === 'approved') {
+        return ({
+          statusCode: 304,
+          message: "Payment has already been captured.",
+        });
+      }
+
+
+      // Product Validation/Stock/Removal Transaction Start
+      let error;
+      const products_oos = [];
+      const knex = strapi.connections.default;
+ 
+      try {
+        await knex.transaction(async trx => {
+          const realProducts = await trx
+            .select('amount', 'title')
+            .from('products')
+            .orderBy('id', 'asc');
+         
+          const res = await (async function loop() {
+            for (let i = 0; i < products_list.length; i++) {
+              const {id, cart_amount} = products_list[i];
+              if(isNaN(id) || isNaN(cart_amount)) {
+                error = 'NaN';
+                await trx.rollback();
+                return;
+              }
+ 
+              if(cart_amount > realProducts[id - 1].amount) {
+                products_oos.push({
+                  title: realProducts[id - 1].title
+                });
+              }
+ 
+              const updatedProduct = await trx
+                .where('id', '=', id)
+                .update({
+                  amount: realProducts[id - 1].amount - cart_amount,
+                })
+                .from('products');            
+            }
+          })();
+ 
+          if(products_oos.length > 0) {
+            error = 'oos';
+            await trx.rollback();
+            return;
+          }
+          return res;    
+        });
+      } catch (err) {
+ 
+        if(error === 'oos') {
+          return ({
+            statusCode: 400,
+            error: "Bad Request",
+            message: "Products out of stock.",
+            products: products_oos
+          });
+        }
+        if(error === 'NaN') {
+          return ({
+            statusCode: 400,
+            error: "Bad Request",
+            message: "Not a Number."
+          });
+        } 
+      }
+      // Validation Ends
 
       const payment = await new Promise((resolve, reject) => {
         paypal.payment.execute(paymentId, execute_payment_json, (error, payment) => {
@@ -293,19 +526,90 @@ module.exports = {
             resolve(payment);
           }
         });
-      }).catch(() => {  
-        ctx.throw(404, 'PayPal Execute Was Not Successful.');
+      }).catch(async () => {  
+        try {
+          await knex.transaction(async trx => {
+            const realProducts = await trx
+              .select('amount', 'title')
+              .from('products')
+              .orderBy('id', 'asc');
+            const res = await (async function loop() {
+              for (let i = 0; i < products_list.length; i++) {
+                const {id, cart_amount} = products_list[i];
+                const updatedProduct = await trx
+                  .where('id', '=', id)
+                  .update({
+                    amount: realProducts[id - 1].amount + cart_amount,
+                  })
+                  .from('products');            
+              }
+            })();
+            return res;    
+          });
+        } catch (err) {
+          return ({
+            statusCode: 400,
+            error: "Bad Request",
+            message: "Inventory Removal Failed."
+          });
+        }
+        return ({
+          statusCode: 400,
+          error: "Bad Request",
+          message: "Stripe Execute was not Succesful."
+        });
       });
 
       if(payment.state === 'approved') {
         const updateOrder = await strapi.services.order.update({
           checkout_session: token
         }, {
-          status: 'paid'
+          status: 'paid',
+          payment_ID: '',
         });
         const updated_order = sanitizeEntity(updateOrder, { model: strapi.models.order });
-        return updated_order;
+        return ({
+          statusCode: 200,
+          message: "Success.",
+          updated_order: updated_order
+        });
       } else {
+        // Undo Inventory Removal
+        try {
+          await knex.transaction(async trx => {
+            const realProducts = await trx
+              .select('amount', 'title')
+              .from('products')
+              .orderBy('id', 'asc');
+          
+            const res = await (async function loop() {
+              for (let i = 0; i < products_list.length; i++) {
+                const {id, cart_amount} = products_list[i];
+                if(isNaN(id) || isNaN(cart_amount)) {
+                  error = 'NaN';
+                  await trx.rollback();
+                  return;
+                }
+  
+                const updatedProduct = await trx
+                  .where('id', '=', id)
+                  .update({
+                    amount: realProducts[id - 1].amount + cart_amount,
+                  })
+                  .from('products');            
+              }
+            })();
+            return res;    
+          });
+        } catch (err) {
+          // Cancel
+          return ({
+            statusCode: 400,
+            error: "Bad Request",
+            message: "Inventory Removal Failed."
+          });
+        }
+        // Undo Inventory Removal Ends
         ctx.throw(400, 'The payment was not successful, please call support');
       }
     }
@@ -389,3 +693,31 @@ module.exports = {
     }
   },
 };
+
+async function sendEmail(to, from, order_id, order_date, list, total) {
+  await strapi.plugins['email'].services.email.send({
+    to: to,
+    from: from,
+    subject: 'Purchase Receipt',
+    text: `Hola`,
+    html: `<div style="max-width: 20rem;border-radius: 0.25rem;padding: 1.5rem;background: #ffffff;color: #333;box-shadow: 0 2px 3px 0px #00000010;border: 1px solid #00000020;padding-bottom: 0;">
+      <div style="margin-bottom: 1.5rem;">
+        <h2 style="margin-top: 0;text-align: center">Thank you for your purchase!</h2>
+        <div style="display: flex;justify-content: space-between;">
+          <h4 style="color: #888;margin: 0;">ORDER: ${order_id}</h4>
+          <h4 style="color: #888;margin: 0;margin-left: auto;">${order_date}</h4>
+        </div>
+      </div>
+        <hr style="color: #00000020;">
+      <div style="margin-top: 1.5rem;display: grid;gap: 0.5rem;">
+        ${list}
+        <hr style="color: #00000020;width: 100%;">
+        <div style="display: flex;justify-content: space-between;gap: 0.5rem;align-items: center;padding-bottom: 0.5rem;">
+          <p>&nbsp;</p>
+          <p style="font-weight: bold; margin-left: auto; margin-right:0.5rem">Total:</p>
+          <p style="font-weight: bold;"">$${total}</p>
+        </div>
+      </div>
+    </div>`,
+  });
+}
