@@ -114,8 +114,8 @@ module.exports = {
             currency: 'usd',
             product_data: {
               name: e.title,
-              // images: [e.image.url],
-              images: ['https://res.cloudinary.com/dz5vyxfew/image/upload/v1609450711/RFB_0502_1_pastelitoszulianos_529e1a5266.jpg'],
+              images: [e.image.url],
+              // images: ['https://res.cloudinary.com/dz5vyxfew/image/upload/v1609450711/RFB_0502_1_pastelitoszulianos_529e1a5266.jpg'],
             },
             unit_amount: fromDecimalToInt(e.price)
           },
