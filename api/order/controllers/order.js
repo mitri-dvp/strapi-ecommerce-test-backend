@@ -248,50 +248,47 @@ module.exports = {
       }
 
       // Product Validation/Stock/Removal Transaction Start
-      let error;
-      const products_oos = [];
       const knex = strapi.connections.default;
+      const products_oos = [];
+      let error;
 
       try {
-        await knex.transaction(async trx => {
-          const realProducts = await trx
-            .select('amount', 'title')
-            .from('products')
-            .orderBy('id', 'asc');
-        
-          const res = await (async function loop() {
+        await knex.transaction(async trx => {        
+          await (async function loop() {
             for (let i = 0; i < products_list.length; i++) {
               const {id, cart_amount} = products_list[i];
+
               if(isNaN(id) || isNaN(cart_amount)) {
                 error = 'NaN';
                 await trx.rollback();
                 return;
               }
 
-              if(cart_amount > realProducts[id - 1].amount) {
+              const realProduct = await trx
+                .select('amount', 'title')
+                .from('products')
+                .where('id', '=', id);
+
+              if(cart_amount > realProduct[0].amount) {
                 products_oos.push({
-                  title: realProducts[id - 1].title
+                  title: realProduct[0].title
                 });
               }
-
               const updatedProduct = await trx
-                .where('id', '=', id)
                 .update({
-                  amount: realProducts[id - 1].amount - cart_amount,
+                  amount: realProduct[0].amount - cart_amount,
                 })
-                .from('products');            
+                .where('id', '=', id)
+                .from('products');
             }
           })();
-
           if(products_oos.length > 0) {
             error = 'oos';
             await trx.rollback();
             return;
           }
-          return res;    
         });
       } catch (err) {
-
         if(error === 'oos') {
           intent = await stripe.paymentIntents.cancel(session.payment_intent);
           return ({
@@ -308,7 +305,13 @@ module.exports = {
             error: "Bad Request",
             message: "Not a Number."
           });
-        } 
+        }
+        intent = await stripe.paymentIntents.cancel(session.payment_intent);
+        return ({
+          statusCode: 500,
+          error: "Server Error",
+          message: "Server Error"
+        });
       }
       // Validation Ends
 
@@ -316,23 +319,24 @@ module.exports = {
         intent = await stripe.paymentIntents.capture(session.payment_intent);
       } catch (err) {
         try {
-          await knex.transaction(async trx => {
-            const realProducts = await trx
-              .select('amount', 'title')
-              .from('products')
-              .orderBy('id', 'asc');
-            const res = await (async function loop() {
+          await knex.transaction(async trx => {        
+            await (async function loop() {
               for (let i = 0; i < products_list.length; i++) {
                 const {id, cart_amount} = products_list[i];
+
+                const realProduct = await trx
+                  .select('amount', 'title')
+                  .from('products')
+                  .where('id', '=', id);
+  
                 const updatedProduct = await trx
-                  .where('id', '=', id)
                   .update({
-                    amount: realProducts[id - 1].amount + cart_amount,
+                    amount: realProduct[0].amount + cart_amount,
                   })
+                  .where('id', '=', id)
                   .from('products');            
               }
             })();
-            return res;    
           });
         } catch (err) {
           return ({
@@ -389,29 +393,23 @@ module.exports = {
         // Undo Inventory Removal
         try {
           await knex.transaction(async trx => {
-            const realProducts = await trx
-              .select('amount', 'title')
-              .from('products')
-              .orderBy('id', 'asc');
-          
-            const res = await (async function loop() {
+            await (async function loop() {
               for (let i = 0; i < products_list.length; i++) {
                 const {id, cart_amount} = products_list[i];
-                if(isNaN(id) || isNaN(cart_amount)) {
-                  error = 'NaN';
-                  await trx.rollback();
-                  return;
-                }
+
+                const realProduct = await trx
+                  .select('amount', 'title')
+                  .from('products')
+                  .where('id', '=', id);
   
                 const updatedProduct = await trx
-                  .where('id', '=', id)
                   .update({
-                    amount: realProducts[id - 1].amount + cart_amount,
+                    amount: realProduct[0].amount + cart_amount,
                   })
+                  .where('id', '=', id)
                   .from('products');            
               }
             })();
-            return res;    
           });
         } catch (err) {
           intent = await stripe.paymentIntents.cancel(session.payment_intent);
@@ -456,50 +454,49 @@ module.exports = {
 
 
       // Product Validation/Stock/Removal Transaction Start
-      let error;
-      const products_oos = [];
       const knex = strapi.connections.default;
- 
+      const products_oos = [];
+      let error;
+
       try {
-        await knex.transaction(async trx => {
-          const realProducts = await trx
-            .select('amount', 'title')
-            .from('products')
-            .orderBy('id', 'asc');
-         
-          const res = await (async function loop() {
+        await knex.transaction(async trx => {        
+          await (async function loop() {
             for (let i = 0; i < products_list.length; i++) {
               const {id, cart_amount} = products_list[i];
+
               if(isNaN(id) || isNaN(cart_amount)) {
                 error = 'NaN';
                 await trx.rollback();
                 return;
               }
- 
-              if(cart_amount > realProducts[id - 1].amount) {
+
+              const realProduct = await trx
+                .select('amount', 'title')
+                .from('products')
+                .where('id', '=', id);
+
+              if(cart_amount > realProduct[0].amount) {
                 products_oos.push({
-                  title: realProducts[id - 1].title
+                  title: realProduct[0].title
                 });
               }
- 
+
               const updatedProduct = await trx
-                .where('id', '=', id)
                 .update({
-                  amount: realProducts[id - 1].amount - cart_amount,
+                  amount: realProduct[0].amount - cart_amount,
                 })
+                .where('id', '=', id)
                 .from('products');            
             }
           })();
- 
+
           if(products_oos.length > 0) {
             error = 'oos';
             await trx.rollback();
             return;
           }
-          return res;    
         });
       } catch (err) {
- 
         if(error === 'oos') {
           return ({
             statusCode: 400,
@@ -529,22 +526,23 @@ module.exports = {
       }).catch(async () => {  
         try {
           await knex.transaction(async trx => {
-            const realProducts = await trx
-              .select('amount', 'title')
-              .from('products')
-              .orderBy('id', 'asc');
-            const res = await (async function loop() {
+            await (async function loop() {
               for (let i = 0; i < products_list.length; i++) {
                 const {id, cart_amount} = products_list[i];
+
+                const realProduct = await trx
+                  .select('amount', 'title')
+                  .from('products')
+                  .where('id', '=', id);
+  
                 const updatedProduct = await trx
-                  .where('id', '=', id)
                   .update({
-                    amount: realProducts[id - 1].amount + cart_amount,
+                    amount: realProduct[0].amount + cart_amount,
                   })
+                  .where('id', '=', id)
                   .from('products');            
               }
             })();
-            return res;    
           });
         } catch (err) {
           return ({
@@ -577,29 +575,23 @@ module.exports = {
         // Undo Inventory Removal
         try {
           await knex.transaction(async trx => {
-            const realProducts = await trx
-              .select('amount', 'title')
-              .from('products')
-              .orderBy('id', 'asc');
-          
-            const res = await (async function loop() {
+            await (async function loop() {
               for (let i = 0; i < products_list.length; i++) {
                 const {id, cart_amount} = products_list[i];
-                if(isNaN(id) || isNaN(cart_amount)) {
-                  error = 'NaN';
-                  await trx.rollback();
-                  return;
-                }
+
+                const realProduct = await trx
+                  .select('amount', 'title')
+                  .from('products')
+                  .where('id', '=', id);
   
                 const updatedProduct = await trx
                   .where('id', '=', id)
                   .update({
-                    amount: realProducts[id - 1].amount + cart_amount,
+                    amount: realProduct[0].amount + cart_amount,
                   })
                   .from('products');            
               }
             })();
-            return res;    
           });
         } catch (err) {
           // Cancel
